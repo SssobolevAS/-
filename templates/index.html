@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PEP 8 Code Analyzer</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap">
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>PEP 8 Code Analyzer</h1>
+            <p>Проверьте ваш Python-код на соответствие стандартам PEP 8</p>
+        </header>
+
+        <main>
+            <div class="code-section">
+                <h2>Введите ваш код</h2>
+                <textarea id="code" placeholder="def example():
+    print('Hello, world!')"></textarea>
+            </div>
+
+            <div class="actions">
+                <button id="analyze-btn">Проанализировать</button>
+                <button id="clear-btn">Очистить</button>
+            </div>
+
+            <div class="results">
+                <h2>Результаты анализа</h2>
+                <div id="result-output" class="result-box">
+                    <!-- Результаты анализа будут здесь -->
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>© 2026 PEP 8 Analyzer. Все права защищены.</p>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const codeInput = document.getElementById('code');
+            const analyzeBtn = document.getElementById('analyze-btn');
+            const clearBtn = document.getElementById('clear-btn');
+            const resultOutput = document.getElementById('result-output');
+
+            // Описания ошибок PEP 8
+            const pep8Errors = {
+                "E101": { category: "Отступы", description: "Неправильный отступ (должно быть 4 пробела)." },
+                "E111": { category: "Отступы", description: "Неправильный отступ для строки." },
+                "E112": { category: "Отступы", description: "Неправильный отступ для комментария." },
+                "E113": { category: "Отступы", description: "Неправильный отступ для строки (некратный 4 пробелам)." },
+                "E114": { category: "Отступы", description: "Отступ должен быть кратным 4 пробелам." },
+                "E115": { category: "Отступы", description: "Неправильный отступ для комментария." },
+                "E116": { category: "Отступы", description: "Неправильный отступ для многострочного комментария." },
+                "E121": { category: "Отступы", description: "Неправильное выравнивание строк." },
+                "E122": { category: "Отступы", description: "Неправильное выравнивание многострочного выражения." },
+                "E123": { category: "Отступы", description: "Неправильное выравнивание для закрывающей скобки." },
+                "E124": { category: "Отступы", description: "Неправильное выравнивание для многострочного выражения." },
+                "E125": { category: "Отступы", description: "Неправильное выравнивание для продолжения строки." },
+                "E126": { category: "Отступы", description: "Неправильное выравнивание для висячей строки." },
+                "E127": { category: "Отступы", description: "Неправильное выравнивание для многострочного выражения." },
+                "E128": { category: "Отступы", description: "Неправильное выравнивание для многострочного выражения." },
+                "E131": { category: "Отступы", description: "Неправильное выравнивание для многострочного выражения." },
+
+                "E201": { category: "Пробелы", description: "Пробел перед `:` в срезе." },
+                "E202": { category: "Пробелы", description: "Пробел перед `,`, `;` или `:`." },
+                "E203": { category: "Пробелы", description: "Пробел перед `:` в срезе." },
+                "E211": { category: "Пробелы", description: "Пробелы вокруг операторов." },
+                "E221": { category: "Пробелы", description: "Пробелы до и после оператора." },
+                "E222": { category: "Пробелы", description: "Пробелы вокруг оператора." },
+                "E223": { category: "Пробелы", description: "Пробел перед оператором." },
+                "E224": { category: "Пробелы", description: "Пробел после оператора." },
+                "E225": { category: "Пробелы", description: "Отсутствует пробел вокруг оператора." },
+                "E226": { category: "Пробелы", description: "Пробел перед оператором." },
+                "E227": { category: "Пробелы", description: "Пробелы вокруг оператора `=`." },
+                "E228": { category: "Пробелы", description: "Пробелы вокруг оператора." },
+                "E231": { category: "Пробелы", description: "Пробел перед `:` в срезе." },
+                "E241": { category: "Пробелы", description: "Пробелы вокруг оператора `:`." },
+                "E242": { category: "Пробелы", description: "Пробел перед оператором `:`." },
+                "E261": { category: "Пробелы", description: "Пробел перед комментарием." },
+                "E262": { category: "Пробелы", description: "Пробел в начале комментария." },
+                "E265": { category: "Пробелы", description: "Пробел перед комментарием." },
+                "E266": { category: "Пробелы", description: "Слишком много пробелов перед комментарием." },
+                "E271": { category: "Пробелы", description: "Пробелы вокруг оператора." },
+                "E272": { category: "Пробелы", description: "Пробелы вокруг оператора." },
+                "E273": { category: "Пробелы", description: "Пробел перед оператором `=`." },
+                "E274": { category: "Пробелы", description: "Пробел после оператора `=`." },
+                "E275": { category: "Пробелы", description: "Пробел перед оператором `,`." },
+
+                "E301": { category: "Переносы строк", description: "Должно быть ровно одна пустая строка перед классом." },
+                "E302": { category: "Переносы строк", description: "Должно быть ровно две пустые строки перед функцией." },
+                "E303": { category: "Переносы строк", description: "Слишком много пустых строк." },
+                "E305": { category: "Переносы строк", description: "Должно быть ровно две пустые строки перед методом." },
+                "E306": { category: "Переносы строк", description: "Должно быть ровно одна пустая строка перед и после многострочного выражения." },
+
+                "E501": { category: "Длина строки", description: "Строка слишком длинная (максимум 79 символов)." },
+                "E502": { category: "Экранирование", description: "Неправильное экранирование переноса строки." },
+
+                "E701": { category: "Сравнения", description: "Слишком много выражений в одной строке." },
+                "E702": { category: "Сравнения", description: "Слишком много выражений в одной строке." },
+                "E703": { category: "Сравнения", description: "Неправильное использование `;`." },
+                "E711": { category: "Сравнения", description: "Неправильное сравнение с `None`." },
+                "E712": { category: "Сравнения", description: "Неправильное сравнение с `True` или `False`." },
+                "E721": { category: "Сравнения", description: "Неправильное сравнение типов." },
+
+                "E901": { category: "Синтаксис", description: "Синтаксическая ошибка или неожиданный символ." },
+                "E902": { category: "Синтаксис", description: "Неожиданный отступ." },
+
+                "W191": { category: "Табуляция", description: "Использование табуляции вместо пробелов." },
+                "W291": { category: "Трейлинг пробелы", description: "Трейлинг пробелы в конце строки." },
+                "W292": { category: "Трейлинг пробелы", description: "Трейлинг пробелы в конце строки." },
+                "W293": { category: "Трейлинг пробелы", description: "Трейлинг пробелы." },
+                "W391": { category: "Переносы строк", description: "Трейлинг пробелы." },
+
+                "F401": { category: "Импорты", description: "Импорт не используется." },
+                "F841": { category: "Переменные", description: "Локальная переменная не используется." },
+            };
+
+            // Очистка поля ввода
+            clearBtn.addEventListener('click', () => {
+                codeInput.value = '';
+                resultOutput.innerHTML = '';
+                codeInput.focus();
+            });
+
+            // Анализ кода
+            analyzeBtn.addEventListener('click', async () => {
+                const code = codeInput.value.trim();
+
+                if (!code) {
+                    resultOutput.innerHTML = '<p class="error-message">Пожалуйста, вставьте код для анализа.</p>';
+                    codeInput.focus();
+                    return;
+                }
+
+                // Показываем индикатор загрузки
+                resultOutput.innerHTML = '<p>Анализ кода... Пожалуйста, подождите.</p>';
+                analyzeBtn.disabled = true;
+
+                try {
+                    const response = await fetch('/analyze', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ code }),
+                    });
+
+                    // Проверяем статус ответа
+                    if (!response.ok) {
+                        throw new Error(`HTTP ошибка: ${response.status}`);
+                    }
+
+                    const data = await response.json();
+
+                    // Проверяем наличие ошибок от сервера
+                    if (data.error) {
+                        throw new Error(data.error);
+                    }
+
+                    if (data.errors && data.errors.length > 0) {
+                        const lines = code.split('\n');
+                        let outputHTML = '<div class="error-summary"><strong>Найдены ошибки PEP 8:</strong></div>';
+
+                        // Группируем ошибки по категориям
+                        const errorsByCategory = {};
+                        data.errors.forEach(error => {
+                            const category = pep8Errors[error.type]?.category || "Другое";
+                            if (!errorsByCategory[category]) {
+                                errorsByCategory[category] = [];
+                            }
+                            errorsByCategory[category].push(error);
+                        });
+
+                        // Выводим ошибки по категориям
+                        for (const [category, errors] of Object.entries(errorsByCategory)) {
+                            outputHTML += `<div class="error-category"><h3>${category}</h3>`;
+
+                            errors.forEach(error => {
+                                const lineNumber = error.line;
+                                const lineContent = lines[lineNumber - 1] || '';
+                                const errorDescription = pep8Errors[error.type]?.description || error.message;
+
+                                outputHTML += `
+                                    <div class="error-item">
+                                        <p>
+                                            <strong>Строка ${lineNumber}:</strong>
+                                            ${errorDescription} (${error.type})
+                                        </p>
+                                        ${lineContent ? `<pre data-line="${lineNumber}">${escapeHtml(lineContent)}</pre>` : ''}
+                                    </div>
+                                `;
+                            });
+
+                            outputHTML += `</div>`;
+                        }
+
+                        // Добавляем статистику
+                        const totalErrors = data.errors.length;
+                        outputHTML += `<div class="error-summary">
+                            <strong>Итого:</strong> Найдено ${totalErrors} ошибок PEP 8
+                        </div>`;
+
+                        resultOutput.innerHTML = outputHTML;
+                    } else {
+                        resultOutput.innerHTML = '<p class="success-message">✅ Отлично! Код соответствует стандартам PEP 8!</p>';
+                    }
+                } catch (error) {
+                    console.error('Ошибка при анализе:', error);
+                    resultOutput.innerHTML = `
+                        <p class="error-message">
+                            Ошибка при анализе кода: ${escapeHtml(error.message)}
+                        </p>
+                    `;
+                } finally {
+                    // Восстанавливаем кнопку
+                    analyzeBtn.disabled = false;
+                }
+            });
+
+            // Разрешаем анализ по Ctrl+Enter
+            codeInput.addEventListener('keydown', (e) => {
+                if (e.ctrlKey && e.key === 'Enter') {
+                    analyzeBtn.click();
+                }
+            });
+
+            // Функция для экранирования HTML
+            function escapeHtml(unsafe) {
+                if (!unsafe) return '';
+                return unsafe
+                    .replace(/&/g, "&amp;")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;")
+                    .replace(/"/g, "&quot;")
+                    .replace(/'/g, "&#039;");
+            }
+        });
+    </script>
+</body>
+</html>

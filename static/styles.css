@@ -1,0 +1,242 @@
+:root {
+  --primary-color: #4a6fa5;
+  --secondary-color: #166088;
+  --accent-color: #4fc3f7;
+  --success-color: #2ecc71;
+  --error-color: #e74c3c;
+  --warning-color: #f39c12;
+  --light-color: #f8f9fa;
+  --dark-color: #343a40;
+  --border-color: #dee2e6;
+  --shadow-color: rgba(0, 0, 0, 0.1);
+  --font-main: 'Roboto', sans-serif;
+  --font-mono: 'Courier New', monospace;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-main);
+  background-color: #f0f2f5;
+  color: var(--dark-color);
+  line-height: 1.6;
+  padding: 20px;
+}
+
+.container {
+  max-width: 1000px;
+  margin: 0 auto;
+  background-color: white;
+  border-radius: 10px;
+  box-shadow: 0 5px 15px var(--shadow-color);
+  overflow: hidden;
+}
+
+header {
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  color: white;
+  text-align: center;
+  padding: 20px;
+  margin-bottom: 0;
+  border-radius: 10px 10px 0 0;
+}
+
+header h1 {
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+header p {
+  opacity: 0.9;
+  font-weight: 300;
+}
+
+main {
+  padding: 25px;
+}
+
+.code-section h2,
+.results h2 {
+  color: var(--secondary-color);
+  margin-bottom: 15px;
+  font-weight: 600;
+  border-bottom: 2px solid var(--border-color);
+  padding-bottom: 8px;
+}
+
+.code-section textarea {
+  width: 100%;
+  min-height: 250px;
+  padding: 15px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  resize: vertical;
+  transition: border-color 0.3s;
+}
+
+.code-section textarea:focus {
+  outline: none;
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 2px rgba(79, 195, 247, 0.2);
+}
+
+.actions {
+  display: flex;
+  gap: 15px;
+  margin: 20px 0;
+}
+
+button {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  border-radius: 6px;
+  font-family: var(--font-main);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+#analyze-btn {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+#analyze-btn:hover {
+  background-color: var(--secondary-color);
+}
+
+#clear-btn {
+  background-color: var(--light-color);
+  color: var(--dark-color);
+  border: 1px solid var(--border-color);
+}
+
+#clear-btn:hover {
+  background-color: #e9ecef;
+}
+
+.result-box {
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 20px;
+  background-color: var(--light-color);
+  min-height: 100px;
+}
+
+.error-summary {
+  color: var(--error-color);
+  margin-bottom: 15px;
+  font-weight: 600;
+}
+
+.success-message {
+  color: var(--success-color);
+  font-weight: 600;
+  text-align: center;
+  padding: 10px;
+  background-color: rgba(46, 204, 113, 0.1);
+  border-radius: 6px;
+}
+
+.error-message {
+  color: var(--error-color);
+  font-weight: 600;
+  text-align: center;
+  padding: 10px;
+  background-color: rgba(231, 76, 60, 0.1);
+  border-radius: 6px;
+}
+
+.error-category {
+  margin-bottom: 20px;
+  padding: 15px;
+  background-color: white;
+  border-radius: 6px;
+  box-shadow: 0 2px 5px var(--shadow-color);
+}
+
+.error-category h3 {
+  color: var(--secondary-color);
+  margin-bottom: 10px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.error-item {
+  padding: 10px;
+  margin-bottom: 10px;
+  background-color: rgba(79, 195, 247, 0.05);
+  border-left: 4px solid var(--error-color);
+  border-radius: 4px;
+}
+
+.error-item p {
+  margin-bottom: 5px;
+  font-weight: 500;
+}
+
+.error-item pre {
+  margin: 0;
+  padding: 8px;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  overflow-x: auto;
+  position: relative;
+}
+
+.error-item pre::before {
+  content: attr(data-line);
+  position: absolute;
+  left: -30px;
+  color: #999;
+  font-size: 12px;
+  text-align: right;
+  width: 25px;
+}
+
+footer {
+  text-align: center;
+  padding: 15px;
+  color: #6c757d;
+  font-size: 14px;
+  background-color: var(--light-color);
+  border-radius: 0 0 10px 10px;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+  .container {
+    padding: 15px;
+  }
+
+  main {
+    padding: 15px;
+  }
+
+  .actions {
+    flex-direction: column;
+  }
+
+  button {
+    width: 100%;
+  }
+}
+
+/* Анимации */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.error-item {
+  animation: fadeIn 0.3s ease-in-out;
+}
