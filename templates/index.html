@@ -3,242 +3,476 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PEP 8 Code Analyzer</title>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap">
-    <link rel="stylesheet" href="/static/styles.css">
+    <title>PEP 8 Analyzer</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            opacity: 0.9;
+        }
+
+        main {
+            padding: 30px;
+        }
+
+        .editor {
+            margin-bottom: 20px;
+        }
+
+        textarea {
+            width: 100%;
+            height: 300px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            resize: vertical;
+            background: #f8f9fa;
+        }
+
+        textarea:focus {
+            border-color: #667eea;
+            outline: none;
+            background: white;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+
+        button {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            flex: 2;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102,126,234,0.3);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            flex: 1;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .results {
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            min-height: 200px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .error-item {
+            background: #fff;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            transition: all 0.2s;
+        }
+
+        .error-item:hover {
+            border-color: #dc3545;
+            box-shadow: 0 5px 15px rgba(220,53,69,0.1);
+            transform: translateX(5px);
+        }
+
+        .error-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+
+        .line-badge {
+            background: #6c757d;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .error-code {
+            background: #dc3545;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        .error-name {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .error-message {
+            color: #666;
+            margin-bottom: 10px;
+            padding: 8px;
+            background: #f8f9fa;
+            border-radius: 4px;
+        }
+
+        .error-line {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            padding: 10px;
+            font-family: monospace;
+            position: relative;
+        }
+
+        .error-pointer {
+            color: #dc3545;
+            font-weight: bold;
+            font-size: 18px;
+            margin-top: 2px;
+        }
+
+        .success-message {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+            padding: 30px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .success-message i {
+            font-size: 48px;
+            color: #28a745;
+            margin-bottom: 20px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        footer {
+            background: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            color: #6c757d;
+            border-top: 1px solid #e9ecef;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>PEP 8 Code Analyzer</h1>
-            <p>Проверьте ваш Python-код на соответствие стандартам PEP 8</p>
+            <h1><i class="fas fa-code"></i> PEP 8 Analyzer</h1>
+            <p>Проверка Python кода на соответствие стандартам</p>
         </header>
 
         <main>
-            <div class="code-section">
-                <h2>Введите ваш код</h2>
-                <textarea id="code" placeholder="def example():
-    print('Hello, world!')"></textarea>
+            <div class="editor">
+                <textarea id="code" placeholder="# Введите ваш Python код..."># Пример кода с ошибками
+def bad_function(x,y):
+    result= x+y
+    if result>10:
+    print("Больше 10")
+    else:print("Меньше или равно 10")
+    return result
+
+class bad_class:
+    def __init__(self):
+    self.value=10
+
+import sys, os
+print(bad_function(5,7))</textarea>
             </div>
 
-            <div class="actions">
-                <button id="analyze-btn">Проанализировать</button>
-                <button id="clear-btn">Очистить</button>
+            <div class="buttons">
+                <button id="analyzeBtn" class="btn-primary">
+                    <i class="fas fa-search"></i> Анализировать
+                </button>
+                <button id="clearBtn" class="btn-secondary">
+                    <i class="fas fa-broom"></i> Очистить
+                </button>
             </div>
 
-            <div class="results">
-                <h2>Результаты анализа</h2>
-                <div id="result-output" class="result-box">
-                    <!-- Результаты анализа будут здесь -->
+            <div id="results" class="results">
+                <div style="text-align: center; color: #6c757d; padding: 40px;">
+                    <i class="fas fa-info-circle" style="font-size: 48px; margin-bottom: 20px;"></i>
+                    <p>Нажмите "Анализировать" для проверки кода</p>
                 </div>
             </div>
         </main>
 
         <footer>
-            <p>© 2026 PEP 8 Analyzer. Все права защищены.</p>
+            <p>Нажмите Ctrl+Enter для быстрого анализа</p>
         </footer>
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const codeInput = document.getElementById('code');
-            const analyzeBtn = document.getElementById('analyze-btn');
-            const clearBtn = document.getElementById('clear-btn');
-            const resultOutput = document.getElementById('result-output');
+        const codeInput = document.getElementById('code');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const resultsDiv = document.getElementById('results');
 
-            // Описания ошибок PEP 8
-            const pep8Errors = {
-                "E101": { category: "Отступы", description: "Неправильный отступ (должно быть 4 пробела)." },
-                "E111": { category: "Отступы", description: "Неправильный отступ для строки." },
-                "E112": { category: "Отступы", description: "Неправильный отступ для комментария." },
-                "E113": { category: "Отступы", description: "Неправильный отступ для строки (некратный 4 пробелам)." },
-                "E114": { category: "Отступы", description: "Отступ должен быть кратным 4 пробелам." },
-                "E115": { category: "Отступы", description: "Неправильный отступ для комментария." },
-                "E116": { category: "Отступы", description: "Неправильный отступ для многострочного комментария." },
-                "E121": { category: "Отступы", description: "Неправильное выравнивание строк." },
-                "E122": { category: "Отступы", description: "Неправильное выравнивание многострочного выражения." },
-                "E123": { category: "Отступы", description: "Неправильное выравнивание для закрывающей скобки." },
-                "E124": { category: "Отступы", description: "Неправильное выравнивание для многострочного выражения." },
-                "E125": { category: "Отступы", description: "Неправильное выравнивание для продолжения строки." },
-                "E126": { category: "Отступы", description: "Неправильное выравнивание для висячей строки." },
-                "E127": { category: "Отступы", description: "Неправильное выравнивание для многострочного выражения." },
-                "E128": { category: "Отступы", description: "Неправильное выравнивание для многострочного выражения." },
-                "E131": { category: "Отступы", description: "Неправильное выравнивание для многострочного выражения." },
+        // Функция анализа
+        async function analyzeCode() {
+            const code = codeInput.value;
 
-                "E201": { category: "Пробелы", description: "Пробел перед `:` в срезе." },
-                "E202": { category: "Пробелы", description: "Пробел перед `,`, `;` или `:`." },
-                "E203": { category: "Пробелы", description: "Пробел перед `:` в срезе." },
-                "E211": { category: "Пробелы", description: "Пробелы вокруг операторов." },
-                "E221": { category: "Пробелы", description: "Пробелы до и после оператора." },
-                "E222": { category: "Пробелы", description: "Пробелы вокруг оператора." },
-                "E223": { category: "Пробелы", description: "Пробел перед оператором." },
-                "E224": { category: "Пробелы", description: "Пробел после оператора." },
-                "E225": { category: "Пробелы", description: "Отсутствует пробел вокруг оператора." },
-                "E226": { category: "Пробелы", description: "Пробел перед оператором." },
-                "E227": { category: "Пробелы", description: "Пробелы вокруг оператора `=`." },
-                "E228": { category: "Пробелы", description: "Пробелы вокруг оператора." },
-                "E231": { category: "Пробелы", description: "Пробел перед `:` в срезе." },
-                "E241": { category: "Пробелы", description: "Пробелы вокруг оператора `:`." },
-                "E242": { category: "Пробелы", description: "Пробел перед оператором `:`." },
-                "E261": { category: "Пробелы", description: "Пробел перед комментарием." },
-                "E262": { category: "Пробелы", description: "Пробел в начале комментария." },
-                "E265": { category: "Пробелы", description: "Пробел перед комментарием." },
-                "E266": { category: "Пробелы", description: "Слишком много пробелов перед комментарием." },
-                "E271": { category: "Пробелы", description: "Пробелы вокруг оператора." },
-                "E272": { category: "Пробелы", description: "Пробелы вокруг оператора." },
-                "E273": { category: "Пробелы", description: "Пробел перед оператором `=`." },
-                "E274": { category: "Пробелы", description: "Пробел после оператора `=`." },
-                "E275": { category: "Пробелы", description: "Пробел перед оператором `,`." },
+            if (!code.trim()) {
+                showError('Введите код для анализа');
+                return;
+            }
 
-                "E301": { category: "Переносы строк", description: "Должно быть ровно одна пустая строка перед классом." },
-                "E302": { category: "Переносы строк", description: "Должно быть ровно две пустые строки перед функцией." },
-                "E303": { category: "Переносы строк", description: "Слишком много пустых строк." },
-                "E305": { category: "Переносы строк", description: "Должно быть ровно две пустые строки перед методом." },
-                "E306": { category: "Переносы строк", description: "Должно быть ровно одна пустая строка перед и после многострочного выражения." },
+            // Показываем загрузку
+            resultsDiv.innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Анализ кода...</p>
+                </div>
+            `;
 
-                "E501": { category: "Длина строки", description: "Строка слишком длинная (максимум 79 символов)." },
-                "E502": { category: "Экранирование", description: "Неправильное экранирование переноса строки." },
+            analyzeBtn.disabled = true;
+            analyzeBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Анализ...';
 
-                "E701": { category: "Сравнения", description: "Слишком много выражений в одной строке." },
-                "E702": { category: "Сравнения", description: "Слишком много выражений в одной строке." },
-                "E703": { category: "Сравнения", description: "Неправильное использование `;`." },
-                "E711": { category: "Сравнения", description: "Неправильное сравнение с `None`." },
-                "E712": { category: "Сравнения", description: "Неправильное сравнение с `True` или `False`." },
-                "E721": { category: "Сравнения", description: "Неправильное сравнение типов." },
+            try {
+                const response = await fetch('/analyze', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ code })
+                });
 
-                "E901": { category: "Синтаксис", description: "Синтаксическая ошибка или неожиданный символ." },
-                "E902": { category: "Синтаксис", description: "Неожиданный отступ." },
+                const data = await response.json();
 
-                "W191": { category: "Табуляция", description: "Использование табуляции вместо пробелов." },
-                "W291": { category: "Трейлинг пробелы", description: "Трейлинг пробелы в конце строки." },
-                "W292": { category: "Трейлинг пробелы", description: "Трейлинг пробелы в конце строки." },
-                "W293": { category: "Трейлинг пробелы", description: "Трейлинг пробелы." },
-                "W391": { category: "Переносы строк", description: "Трейлинг пробелы." },
-
-                "F401": { category: "Импорты", description: "Импорт не используется." },
-                "F841": { category: "Переменные", description: "Локальная переменная не используется." },
-            };
-
-            // Очистка поля ввода
-            clearBtn.addEventListener('click', () => {
-                codeInput.value = '';
-                resultOutput.innerHTML = '';
-                codeInput.focus();
-            });
-
-            // Анализ кода
-            analyzeBtn.addEventListener('click', async () => {
-                const code = codeInput.value.trim();
-
-                if (!code) {
-                    resultOutput.innerHTML = '<p class="error-message">Пожалуйста, вставьте код для анализа.</p>';
-                    codeInput.focus();
-                    return;
+                if (data.success) {
+                    displayResults(data);
+                } else {
+                    showError(data.error || 'Ошибка анализа');
                 }
+            } catch (error) {
+                showError('Ошибка подключения к серверу');
+                console.error(error);
+            } finally {
+                analyzeBtn.disabled = false;
+                analyzeBtn.innerHTML = '<i class="fas fa-search"></i> Анализировать';
+            }
+        }
 
-                // Показываем индикатор загрузки
-                resultOutput.innerHTML = '<p>Анализ кода... Пожалуйста, подождите.</p>';
-                analyzeBtn.disabled = true;
+        // Отображение результатов
+        function displayResults(data) {
+            const errors = data.errors || [];
+            const lines = codeInput.value.split('\n');
 
-                try {
-                    const response = await fetch('/analyze', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({ code }),
-                    });
+            if (errors.length === 0) {
+                resultsDiv.innerHTML = `
+                    <div class="success-message">
+                        <i class="fas fa-check-circle"></i>
+                        <h3 style="margin-bottom: 10px;">✅ Код соответствует PEP 8!</h3>
+                        <p style="font-size: 18px;">Оценка качества: ${data.summary.score}/100</p>
+                    </div>
+                `;
+                return;
+            }
 
-                    // Проверяем статус ответа
-                    if (!response.ok) {
-                        throw new Error(`HTTP ошибка: ${response.status}`);
-                    }
+            let stats = `
+                <div class="stats">
+                    <span><strong>Найдено ошибок:</strong> ${errors.length}</span>
+                    <span><strong>Строк кода:</strong> ${data.summary.lines}</span>
+                    <span><strong>Оценка:</strong> ${data.summary.score}/100</span>
+                </div>
+            `;
 
-                    const data = await response.json();
+            let html = stats;
 
-                    // Проверяем наличие ошибок от сервера
-                    if (data.error) {
-                        throw new Error(data.error);
-                    }
-
-                    if (data.errors && data.errors.length > 0) {
-                        const lines = code.split('\n');
-                        let outputHTML = '<div class="error-summary"><strong>Найдены ошибки PEP 8:</strong></div>';
-
-                        // Группируем ошибки по категориям
-                        const errorsByCategory = {};
-                        data.errors.forEach(error => {
-                            const category = pep8Errors[error.type]?.category || "Другое";
-                            if (!errorsByCategory[category]) {
-                                errorsByCategory[category] = [];
-                            }
-                            errorsByCategory[category].push(error);
-                        });
-
-                        // Выводим ошибки по категориям
-                        for (const [category, errors] of Object.entries(errorsByCategory)) {
-                            outputHTML += `<div class="error-category"><h3>${category}</h3>`;
-
-                            errors.forEach(error => {
-                                const lineNumber = error.line;
-                                const lineContent = lines[lineNumber - 1] || '';
-                                const errorDescription = pep8Errors[error.type]?.description || error.message;
-
-                                outputHTML += `
-                                    <div class="error-item">
-                                        <p>
-                                            <strong>Строка ${lineNumber}:</strong>
-                                            ${errorDescription} (${error.type})
-                                        </p>
-                                        ${lineContent ? `<pre data-line="${lineNumber}">${escapeHtml(lineContent)}</pre>` : ''}
-                                    </div>
-                                `;
-                            });
-
-                            outputHTML += `</div>`;
-                        }
-
-                        // Добавляем статистику
-                        const totalErrors = data.errors.length;
-                        outputHTML += `<div class="error-summary">
-                            <strong>Итого:</strong> Найдено ${totalErrors} ошибок PEP 8
-                        </div>`;
-
-                        resultOutput.innerHTML = outputHTML;
-                    } else {
-                        resultOutput.innerHTML = '<p class="success-message">✅ Отлично! Код соответствует стандартам PEP 8!</p>';
-                    }
-                } catch (error) {
-                    console.error('Ошибка при анализе:', error);
-                    resultOutput.innerHTML = `
-                        <p class="error-message">
-                            Ошибка при анализе кода: ${escapeHtml(error.message)}
-                        </p>
+            errors.forEach((error, index) => {
+                const lineContent = lines[error.line - 1] || '';
+                
+                html += `
+                    <div class="error-item" onclick="showDetails(${index})">
+                        <div class="error-header">
+                            <span class="line-badge">Строка ${error.line}:${error.column}</span>
+                            <span class="error-code">${error.code}</span>
+                            <span class="error-name">${escapeHtml(error.name)}</span>
+                        </div>
+                        <div class="error-message">
+                            <i class="fas fa-exclamation-triangle" style="color: #dc3545; margin-right: 8px;"></i>
+                            ${escapeHtml(error.message)}
+                        </div>
+                `;
+                
+                if (lineContent) {
+                    const column = Math.min(error.column, lineContent.length);
+                    html += `
+                        <div class="error-line">
+                            <pre style="margin: 0;">${escapeHtml(lineContent)}</pre>
+                            ${column > 0 ? `<div class="error-pointer" style="margin-left: ${column * 8}px;">↑</div>` : ''}
+                        </div>
                     `;
-                } finally {
-                    // Восстанавливаем кнопку
-                    analyzeBtn.disabled = false;
                 }
+                
+                html += `</div>`;
             });
 
-            // Разрешаем анализ по Ctrl+Enter
-            codeInput.addEventListener('keydown', (e) => {
-                if (e.ctrlKey && e.key === 'Enter') {
-                    analyzeBtn.click();
-                }
-            });
+            resultsDiv.innerHTML = html;
+            window.currentErrors = errors;
+        }
 
-            // Функция для экранирования HTML
-            function escapeHtml(unsafe) {
-                if (!unsafe) return '';
-                return unsafe
-                    .replace(/&/g, "&amp;")
-                    .replace(/</g, "&lt;")
-                    .replace(/>/g, "&gt;")
-                    .replace(/"/g, "&quot;")
-                    .replace(/'/g, "&#039;");
+        // Показать детали ошибки
+        window.showDetails = function(index) {
+            const error = window.currentErrors[index];
+            if (!error) return;
+            
+            alert(`
+📌 Ошибка: ${error.code}
+📝 Название: ${error.name}
+💬 Описание: ${error.message}
+📍 Позиция: строка ${error.line}, колонка ${error.column}
+⚡ Серьезность: ${error.severity}
+            `);
+        };
+
+        // Показать ошибку
+        function showError(message) {
+            resultsDiv.innerHTML = `
+                <div style="background: #f8d7da; color: #721c24; padding: 30px; border-radius: 8px; text-align: center;">
+                    <i class="fas fa-exclamation-circle" style="font-size: 48px; margin-bottom: 20px;"></i>
+                    <h3 style="margin-bottom: 10px;">❌ Ошибка</h3>
+                    <p>${escapeHtml(message)}</p>
+                </div>
+            `;
+        }
+
+        // Экранирование HTML
+        function escapeHtml(text) {
+            if (!text) return '';
+            return String(text)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        // Очистка
+        function clearAll() {
+            if (confirm('Очистить код и результаты?')) {
+                codeInput.value = '# Введите ваш Python код...';
+                resultsDiv.innerHTML = `
+                    <div style="text-align: center; color: #6c757d; padding: 40px;">
+                        <i class="fas fa-info-circle" style="font-size: 48px; margin-bottom: 20px;"></i>
+                        <p>Код очищен</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Проверка сервера
+        async function checkServer() {
+            try {
+                const response = await fetch('/health');
+                if (response.ok) {
+                    console.log('✅ Сервер работает');
+                }
+            } catch (error) {
+                console.error('❌ Сервер недоступен');
+            }
+        }
+
+        // Обработчики событий
+        analyzeBtn.addEventListener('click', analyzeCode);
+        clearBtn.addEventListener('click', clearAll);
+
+        // Ctrl+Enter
+        codeInput.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'Enter') {
+                e.preventDefault();
+                analyzeCode();
             }
         });
+
+        // Проверяем сервер при загрузке
+        checkServer();
     </script>
 </body>
 </html>
