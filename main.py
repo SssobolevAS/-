@@ -3,13 +3,19 @@ import os
 from pathlib import Path
 import json
 import socket
+import logging
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
+import uvicorn
 
-app = FastAPI()
+# Настройка логирования
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+app = FastAPI(title="PEP 8 Analyzer")
 
 # Настройка CORS
 app.add_middleware(
@@ -20,15 +26,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Создаем директории
-Path("static").mkdir(exist_ok=True)
-Path("templates").mkdir(exist_ok=True)
+# Создаем необходимые директории
+BASE_DIR = Path(__file__).parent
+TEMPLATES_DIR = BASE_DIR / "templates"
+STATIC_DIR = BASE_DIR / "static"
 
-# Подключаем статические файлы и шаблоны
-app.mount("/static", StaticFiles(directory="static"), name="static")
-templates = Jinja2Templates(directory="templates")
+TEMPLATES_DIR.mkdir(exist_ok=True)
+STATIC_DIR.mkdir(exist_ok=True)
 
-# Словарь ошибок
+# Подключаем шаблоны
+templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
+
+# Словарь ошибок PEP8
 ERRORS = {
     "E111": {
         "name": "Отступ не кратен 4",
@@ -109,9 +118,10 @@ def analyze_pep8(code):
     
     for i, line in enumerate(lines, 1):
         stripped = line.rstrip()
+        original_line = line
         
         # 1. Пробелы в конце строки (W291)
-        if line != stripped:
+        if line != stripped and len(stripped) > 0:
             errors.append({
                 'line': i,
                 'column': len(stripped),
@@ -146,10 +156,10 @@ def analyze_pep8(code):
                 })
         
         # 4. Пробелы вокруг оператора (E225)
-        if '=' in line and not '==' in line and not '!=' in line:
+        if '=' in line and not '==' in line and not '!=' in line and not '<=' in line and not '>=' in line:
             pos = line.find('=')
             if pos > 0:
-                if pos > 0 and line[pos-1] != ' ' and not line[:pos].rstrip().endswith(('def', 'if', 'for', 'while')):
+                if pos > 0 and line[pos-1] != ' ' and not line[:pos].rstrip().endswith(('def', 'if', 'for', 'while', 'with')):
                     errors.append({
                         'line': i,
                         'column': pos,
@@ -171,7 +181,7 @@ def analyze_pep8(code):
         # 5. Пробел после запятой (E231)
         if ',' in line:
             for j, char in enumerate(line):
-                if char == ',' and j + 1 < len(line) and line[j + 1] not in [' ', ')', ']', '}']:
+                if char == ',' and j + 1 < len(line) and line[j + 1] not in [' ', ')', ']', '}', '\n']:
                     errors.append({
                         'line': i,
                         'column': j + 1,
@@ -182,47 +192,7 @@ def analyze_pep8(code):
                     })
                     break
         
-        # 6. Пробел перед '(' (E211)
-        if '(' in line:
-            pos = line.find('(')
-            if pos > 0 and line[pos - 1] == ' ':
-                if not line[:pos].strip().endswith(('def', 'if', 'for', 'while')):
-                    errors.append({
-                        'line': i,
-                        'column': pos,
-                        'code': 'E211',
-                        'message': 'Пробел перед (',
-                        'name': ERRORS['E211']['name'],
-                        'severity': ERRORS['E211']['severity']
-                    })
-        
-        # 7. Пробел после '(' (E201)
-        if '(' in line:
-            pos = line.find('(')
-            if pos + 1 < len(line) and line[pos + 1] == ' ':
-                errors.append({
-                    'line': i,
-                    'column': pos + 1,
-                    'code': 'E201',
-                    'message': 'Пробел после (',
-                    'name': ERRORS['E201']['name'],
-                    'severity': ERRORS['E201']['severity']
-                })
-        
-        # 8. Пробел перед ')' (E202)
-        if ')' in line:
-            pos = line.rfind(')')
-            if pos > 0 and line[pos - 1] == ' ':
-                errors.append({
-                    'line': i,
-                    'column': pos,
-                    'code': 'E202',
-                    'message': 'Пробел перед )',
-                    'name': ERRORS['E202']['name'],
-                    'severity': ERRORS['E202']['severity']
-                })
-        
-        # 9. Длина строки (E501)
+        # 6. Длина строки (E501)
         if len(line) > 79 and not line.strip().startswith('#'):
             errors.append({
                 'line': i,
@@ -232,44 +202,8 @@ def analyze_pep8(code):
                 'name': ERRORS['E501']['name'],
                 'severity': ERRORS['E501']['severity']
             })
-        
-        # 10. Пробелы перед комментарием (E261)
-        if '#' in line and not line.strip().startswith('#'):
-            pos = line.find('#')
-            if pos > 0:
-                if line[pos - 1] != ' ':
-                    errors.append({
-                        'line': i,
-                        'column': pos,
-                        'code': 'E261',
-                        'message': 'Нужно 2 пробела перед #',
-                        'name': ERRORS['E261']['name'],
-                        'severity': ERRORS['E261']['severity']
-                    })
-                elif pos > 1 and line[pos - 2] != ' ':
-                    errors.append({
-                        'line': i,
-                        'column': pos,
-                        'code': 'E261',
-                        'message': 'Нужно 2 пробела перед #',
-                        'name': ERRORS['E261']['name'],
-                        'severity': ERRORS['E261']['severity']
-                    })
-        
-        # 11. Пробел после # (E262)
-        if '#' in line:
-            pos = line.find('#')
-            if pos + 1 < len(line) and line[pos + 1] not in [' ', '\n']:
-                errors.append({
-                    'line': i,
-                    'column': pos + 1,
-                    'code': 'E262',
-                    'message': 'Нет пробела после #',
-                    'name': ERRORS['E262']['name'],
-                    'severity': ERRORS['E262']['severity']
-                })
     
-    # 12. Пустая строка в конце (W292)
+    # 7. Пустая строка в конце (W292)
     if lines and lines[-1].strip() != '':
         errors.append({
             'line': len(lines),
@@ -280,31 +214,25 @@ def analyze_pep8(code):
             'severity': ERRORS['W292']['severity']
         })
     
-    # 13. Две пустые строки между функциями (E302)
-    for i in range(1, len(lines)):
-        if lines[i].strip().startswith('def ') and i > 0:
-            empty_count = 0
-            j = i - 1
-            while j >= 0 and not lines[j].strip():
-                empty_count += 1
-                j -= 1
-            if empty_count < 2:
-                errors.append({
-                    'line': i + 1,
-                    'column': 0,
-                    'code': 'E302',
-                    'message': 'Нужно 2 пустых строки перед функцией',
-                    'name': ERRORS['E302']['name'],
-                    'severity': ERRORS['E302']['severity']
-                })
-                break
+    # Убираем дубликаты
+    unique_errors = []
+    seen = set()
+    for error in errors:
+        key = (error['line'], error['code'])
+        if key not in seen:
+            seen.add(key)
+            unique_errors.append(error)
     
-    return errors
+    return unique_errors
 
 @app.get("/", response_class=HTMLResponse)
 async def root(request: Request):
     """Главная страница"""
-    return templates.TemplateResponse("index.html", {"request": request})
+    try:
+        return templates.TemplateResponse("index.html", {"request": request})
+    except Exception as e:
+        logger.error(f"Error loading template: {e}")
+        return HTMLResponse(content="<h1>Error loading page</h1>", status_code=500)
 
 @app.post("/analyze")
 async def analyze(request: Request):
@@ -322,40 +250,32 @@ async def analyze(request: Request):
         # Анализируем код
         errors = analyze_pep8(code)
         
-        # Убираем дубликаты
-        unique = []
-        seen = set()
-        for e in errors:
-            key = (e['line'], e['code'])
-            if key not in seen:
-                seen.add(key)
-                unique.append(e)
-        
         # Сортируем по строке
-        unique.sort(key=lambda x: x['line'])
+        errors.sort(key=lambda x: (x['line'], x['column']))
         
-        # Считаем строки кода
+        # Считаем строки кода (не пустые)
         code_lines = len([l for l in code.split('\n') if l.strip()])
         
         # Оценка качества
         score = 100
-        if unique:
-            score = max(0, 100 - len(unique) * 3)
+        if errors:
+            score = max(0, 100 - len(errors) * 3)
         
         return JSONResponse({
             "success": True,
-            "errors": unique,
+            "errors": errors,
             "summary": {
-                "total": len(unique),
+                "total": len(errors),
                 "lines": code_lines,
                 "score": score
             }
         })
         
     except Exception as e:
+        logger.error(f"Analysis error: {e}")
         return JSONResponse({
             "success": False,
-            "error": str(e)
+            "error": f"Ошибка анализа: {str(e)}"
         })
 
 @app.get("/health")
@@ -363,43 +283,47 @@ async def health():
     """Проверка здоровья"""
     return {"status": "ok", "version": "1.0.0"}
 
-def find_free_port():
+def find_free_port(start_port=8000, max_attempts=10):
     """Находит свободный порт"""
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.bind(('', 0))
-        s.listen(1)
-        port = s.getsockname()[1]
-    return port
+    for port in range(start_port, start_port + max_attempts):
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.bind(('127.0.0.1', port))
+                return port
+        except OSError:
+            continue
+    return None
 
 if __name__ == "__main__":
-    import uvicorn
+    print("=" * 60)
+    print("🚀 PEP 8 Analyzer v1.0")
+    print("=" * 60)
     
-    # Пробуем разные порты
-    ports = [8000, 8001, 8002, 8003, 8004, 8005]
+    # Находим свободный порт
+    port = find_free_port(8000)
     
-    for port in ports:
-        try:
-            print(f"🔍 Пробуем порт {port}...")
-            
-            # Проверяем, свободен ли порт
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                s.bind(('0.0.0.0', port))
-                s.close()
-            
-            # Если дошли сюда - порт свободен
-            print("=" * 50)
-            print("🚀 PEP 8 Analyzer v1.0")
-            print("=" * 50)
-            print(f"✅ Сервер запущен!")
-            print(f"🌐 Откройте в браузере: http://localhost:{port}")
-            print("=" * 50)
-            
-            uvicorn.run(app, host="0.0.0.0", port=port)
-            break
-            
-        except OSError:
-            print(f"❌ Порт {port} занят, пробуем следующий...")
-            continue
-    else:
-        print("❌ Все порты заняты! Закройте другие приложения и попробуйте снова.")
-        input("Нажмите Enter для выхода...")
+    if port is None:
+        print("❌ Не удалось найти свободный порт!")
+        print("💡 Закройте другие приложения и попробуйте снова.")
+        input("\nНажмите Enter для выхода...")
+        sys.exit(1)
+    
+    print(f"✅ Сервер запускается на порту {port}")
+    print(f"🌐 Откройте в браузере: http://localhost:{port}")
+    print("=" * 60)
+    print("Нажмите Ctrl+C для остановки сервера")
+    print("=" * 60)
+    
+    try:
+        uvicorn.run(
+            "main:app",
+            host="127.0.0.1",
+            port=port,
+            reload=False,
+            log_level="info"
+        )
+    except KeyboardInterrupt:
+        print("\n👋 Сервер остановлен")
+    except Exception as e:
+        print(f"❌ Ошибка запуска: {e}")
+        input("\nНажмите Enter для выхода...")
