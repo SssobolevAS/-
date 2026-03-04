@@ -315,7 +315,7 @@ print(bad_function(5,7))</textarea>
             analyzeBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Анализ...';
 
             try {
-                const response = await fetch('/analyze', {
+                const response = await fetch('http://localhost:8000/analyze', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -450,7 +450,7 @@ print(bad_function(5,7))</textarea>
         // Проверка сервера
         async function checkServer() {
             try {
-                const response = await fetch('/health');
+                const response = await fetch('http://localhost:8000/health');
                 if (response.ok) {
                     console.log('✅ Сервер работает');
                 }
